@@ -1,0 +1,79 @@
+{
+  "info": {
+    "name": "Feedback Platform",
+    "description": "Collection para testar os endpoints do projeto Feedback Platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/avaliacao/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "avaliacao",
+            "health"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Listar Feedbacks",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/avaliacao",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "avaliacao"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Criar Feedback",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"descricao\": \"Atendimento muito bom\",\n  \"nota\": 9,\n  \"urgencia\": \"BAIXA\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/avaliacao",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "avaliacao"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
+
