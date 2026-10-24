@@ -1,6 +1,6 @@
 # Feedback Platform
 
-API de feedbacks desenvolvida com Java 21 e Spring Boot. Os feedbacks são persistidos no Azure Cosmos DB. O projeto também contém triggers HTTP do Azure Functions para publicar as operações como funções serverless.
+API de feedbacks desenvolvida com Java 21, Spring Boot e Azure Functions. Os dados são persistidos no Azure Cosmos DB e as operações principais também estão expostas como funções serverless.
 
 ## Tecnologias
 
@@ -9,6 +9,7 @@ API de feedbacks desenvolvida com Java 21 e Spring Boot. Os feedbacks são persi
 - Maven
 - Azure Cosmos DB
 - Azure Functions Runtime 4
+- Azure Communication Services Email
 
 ## Configuração do Azure Cosmos DB
 
@@ -43,15 +44,25 @@ export AZURE_NOTIFICATION_EMAIL="<email-destinatario>"
 
 ## Executar localmente
 
-Para iniciar a API Spring Boot:
+### API Spring Boot
 
 ```bash
 mvn spring-boot:run
 ```
 
-A API Spring fica disponível em `http://localhost:8080`. A conexão com o Cosmos DB precisa estar configurada antes de iniciar a aplicação.
+A API Spring fica disponível em `http://localhost:8080` e expõe os endpoints REST sob `/avaliacao`.
 
-Para compilar e executar os testes:
+### Azure Functions
+
+Antes de iniciar a Function localmente, garanta que o `AzureWebJobsStorage` esteja configurado em `local.settings.json` e que o Azurite esteja em execução.
+
+```bash
+mvn azure-functions:run
+```
+
+As funções locais ficam em `http://localhost:7071/api/...`.
+
+### Testes e build
 
 ```bash
 mvn clean verify
@@ -83,28 +94,31 @@ Retorna o status de saúde da API Spring.
 
 ## Azure Functions
 
-O projeto inclui triggers HTTP anônimos, com rotas padrão do Azure Functions (prefixo `/api`):
+O projeto implementa as funções abaixo, conforme a classe `FeedbackFunction`.
+
+| FunctionName | Gatilho | Endpoint / comportamento |
+| --- | --- | --- |
+| `avaliacao-post` | `HttpTrigger` `POST` | Cria um feedback em `/api/avaliacao` |
+| `avaliacao-list` | `HttpTrigger` `GET` | Lista os feedbacks em `/api/avaliacao` |
+| `health` | `HttpTrigger` `GET` | Verifica saúde em `/api/health` |
+| `notificacao-urgencia` | `QueueTrigger` em `urgency-notifications` | Consome mensagens da fila e envia e-mail para urgência `ALTA` |
+| `relatorio-semanal` | `TimerTrigger` `0 0 9 * * MON` | Gera e envia o relatório semanal na segunda-feira às 09:00 UTC |
+
+Ao receber um feedback com urgência `ALTA`, a function `avaliacao-post` publica os dados em `urgency-notifications`, uma fila do Azure Storage. A function `notificacao-urgencia` consome a mensagem e envia um e-mail ao administrador configurado com descrição, urgência e data de envio. Se o envio falhar, a exceção é registrada para que o runtime do Azure Functions possa repetir o processamento da mensagem.
+
+### Rotas HTTP públicas da Azure Function
 
 | Método | Rota | Função |
 | --- | --- | --- |
-| `POST` | `/api/avaliacao` | Cria um feedback |
-| `GET` | `/api/avaliacao` | Lista os feedbacks |
-| `GET` | `/api/health` | Verifica a saúde da função |
-
-Ao receber um feedback com urgência `ALTA`, a Function de cadastro publica os dados em `urgency-notifications`, uma fila do Azure Storage. A Function `notificacao-urgencia` consome a mensagem e envia um e-mail ao administrador configurado com descrição, urgência e data de envio. Se o envio falhar, a exceção é registrada para que o runtime do Azure Functions possa repetir o processamento da mensagem.
-
-As Functions serverless adicionais são:
-
-| Function | Gatilho | Comportamento |
-| --- | --- | --- |
-| `notificacao-urgencia` | Queue Trigger `urgency-notifications` | Envia e-mail para feedbacks com urgência `ALTA` |
-| `relatorio-semanal` | Timer Trigger, segunda-feira às 09:00 UTC | Gera e envia por e-mail o relatório da semana anterior |
+| `POST` | `/api/avaliacao` | `avaliacao-post` |
+| `GET` | `/api/avaliacao` | `avaliacao-list` |
+| `GET` | `/api/health` | `health` |
 
 ### Relatório semanal
 
-A Function `relatorio-semanal` é executada toda segunda-feira às 09:00 UTC. Ela considera a semana completa anterior (segunda a domingo) e envia um relatório com os feedbacks, a média das notas, a quantidade por dia e a quantidade por urgência ao endereço `AZURE_NOTIFICATION_EMAIL`. Os logs registram somente o período, o total de avaliações e a média, sem incluir as descrições dos feedbacks.
+A function `relatorio-semanal` é executada toda segunda-feira às 09:00 UTC. Ela considera a semana completa anterior (segunda a domingo) e envia um relatório com os feedbacks, a média das notas, a quantidade por dia e a quantidade por urgência ao endereço `AZURE_NOTIFICATION_EMAIL`. Os logs registram somente o período, o total de avaliações e a média, sem incluir descrições dos feedbacks.
 
-O Timer Trigger e a fila usam a conexão `AzureWebJobsStorage` do Azure Functions, declarada explicitamente nos bindings. Em execução local, essa variável já está definida em `local.settings.json` como `UseDevelopmentStorage=true`, portanto o Azurite precisa estar instalado e em execução. Na Function App publicada, configure `AzureWebJobsStorage` com a connection string de uma conta Azure Storage válida.
+O Timer Trigger e a fila usam a conexão `AzureWebJobsStorage` do Azure Functions, declarada explicitamente nos bindings. Em execução local, essa variável já está definida em `local.settings.json` como `UseDevelopmentStorage=true`; portanto, o Azurite precisa estar instalado e em execução. Na Function App publicada, configure `AzureWebJobsStorage` com a connection string de uma conta Azure Storage válida.
 
 Para executar localmente como Azure Functions, é necessário ter o Azure Functions Core Tools instalado:
 
@@ -135,3 +149,11 @@ src/main/java/com/fiap/feedback/
 ├── repository/   # Persistência no Cosmos DB
 └── service/      # Regras de negócio
 ```
+
+## Autores
+
+| Nome | RM |
+| --- | --- |
+| Thiago Vanzele | RM374158 |
+| Luiz Eduardo Gambeti | RM373030 |
+| Sandoval Bento da Silva | RM370706 |
