@@ -1,0 +1,20 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
+server:
+  port: 8080
+
+azure:
+  cosmos:
+    endpoint: ${AZURE_COSMOS_ENDPOINT:https://cosmo-db-feedback.documents.azure.com:443/}
+    key: ${AZURE_COSMOS_KEY:}
+    database-name: ${AZURE_COSMOS_DATABASE:feedback-db}
+    container-name: ${AZURE_COSMOS_CONTAINER:feedback-container}
+  communication:
+    connection-string: ${AZURE_COMMUNICATION_CONNECTION_STRING:}
+
+app:
+  notifications:
+    from: ${AZURE_EMAIL_SENDER:}
+    recipient: ${AZURE_NOTIFICATION_EMAIL:}
