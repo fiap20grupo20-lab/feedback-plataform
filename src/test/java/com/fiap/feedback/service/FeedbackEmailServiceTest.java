@@ -36,4 +36,47 @@ class FeedbackEmailServiceTest {
 
         assertThrows(IllegalStateException.class, () -> service.send("Assunto", "Conteúdo"));
     }
+
+    @Test
+    void deveRecusarEnvioQuandoRemetenteEstiverVazio() {
+        FeedbackEmailService service =
+                new FeedbackEmailService(
+                        emailSender,
+                        "connection-string-teste",
+                        "",
+                        "admin@example.com"
+                );
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> service.send("Assunto", "Conteúdo")
+        );
+    }
+
+    @Test
+    void deveRecusarEnvioQuandoDestinatarioEstiverVazio() {
+        FeedbackEmailService service =
+                new FeedbackEmailService(
+                        emailSender,
+                        "connection-string-teste",
+                        "from@example.com",
+                        ""
+                );
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> service.send("Assunto", "Conteúdo")
+        );
+    }
+
+    @Test
+    void deveRecusarEnvioQuandoTodasAsConfiguracoesEstiveremVazias() {
+        FeedbackEmailService service =
+                new FeedbackEmailService(emailSender, "", "", "");
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> service.send("Assunto", "Conteúdo")
+        );
+    }
 }
