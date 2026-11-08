@@ -23,9 +23,10 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import com.fiap.feedback.enums.Urgencia;
 import com.microsoft.azure.functions.OutputBinding;
-import jakarta.validation.Validator;
 import java.util.Set;
 import java.util.logging.Logger;
+import static org.mockito.ArgumentMatchers.eq;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -450,5 +451,82 @@ class FeedbackFunctionTest {
         verify(responseBuilder).build();
     }
 
+    @Test
+    void deveRetornarErro500QuandoFalharAoCriarFeedback() throws Exception {
+        ObjectMapper mapper = mock(ObjectMapper.class);
+        Validator validator = mock(Validator.class);
+        FeedbackService service = mock(FeedbackService.class);
+        ExecutionContext context = mock(ExecutionContext.class);
+        Logger logger = mock(Logger.class);
+
+        String body = "{\"descricao\":\"Atendimento\",\"nota\":8,\"urgencia\":\"MEDIA\"}";
+        String mensagemErro = "Erro ao salvar feedback";
+
+        FeedbackRequest payload = new FeedbackRequest(
+                "Atendimento",
+                8,
+                Urgencia.MEDIA
+        );
+
+        when(request.getBody())
+                .thenReturn(Optional.of(body));
+
+        when(springContext.getBean(ObjectMapper.class))
+                .thenReturn(mapper);
+
+        when(mapper.readValue(body, FeedbackRequest.class))
+                .thenReturn(payload);
+
+        when(springContext.getBean(Validator.class))
+                .thenReturn(validator);
+
+        when(validator.validate(payload))
+                .thenReturn(Set.of());
+
+        when(springContext.getBean(FeedbackService.class))
+                .thenReturn(service);
+
+        when(service.criar(payload))
+                .thenThrow(new RuntimeException(mensagemErro));
+
+        when(context.getLogger())
+                .thenReturn(logger);
+
+        when(request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR))
+                .thenReturn(responseBuilder);
+
+        when(responseBuilder.body(Map.of(
+                "error",
+                "Falha ao processar o feedback: " + mensagemErro
+        ))).thenReturn(responseBuilder);
+
+        when(responseBuilder.build())
+                .thenReturn(response);
+
+        clearInvocations(springContext);
+
+        HttpResponseMessage resultado = function.criar(request, context, null);
+
+        assertSame(response, resultado);
+
+        verify(service).criar(payload);
+
+        verify(context).getLogger();
+
+        verify(logger).log(
+                eq(java.util.logging.Level.SEVERE),
+                eq("Falha ao processar o feedback."),
+                any(Exception.class)
+        );
+
+        verify(request).createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR);
+
+        verify(responseBuilder).body(Map.of(
+                "error",
+                "Falha ao processar o feedback: " + mensagemErro
+        ));
+
+        verify(responseBuilder).build();
+    }
 
 }
