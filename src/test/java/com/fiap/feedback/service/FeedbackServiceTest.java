@@ -65,4 +65,52 @@ class FeedbackServiceTest {
         assertEquals("Precisa melhorar o tempo de resposta", resultado.get(0).getDescricao());
         verify(repository, times(1)).findAll();
     }
+
+    @Test
+    void deveRetornarListaVaziaQuandoNaoExistiremFeedbacks() {
+        when(repository.findAll()).thenReturn(List.of());
+
+        List<Feedback> resultado = service.listar();
+
+        assertNotNull(resultado);
+        assertTrue(resultado.isEmpty());
+
+        verify(repository, times(1)).findAll();
+    }
+
+    @Test
+    void devePropagarExcecaoAoSalvarFeedback() {
+        FeedbackRequest request = new FeedbackRequest(
+                "Atendimento foi ótimo",
+                9,
+                Urgencia.ALTA
+        );
+
+        when(repository.save(any(Feedback.class)))
+                .thenThrow(new RuntimeException("Erro ao salvar feedback"));
+
+        RuntimeException exception = assertThrows(
+                RuntimeException.class,
+                () -> service.criar(request)
+        );
+
+        assertEquals("Erro ao salvar feedback", exception.getMessage());
+
+        verify(repository, times(1)).save(any(Feedback.class));
+    }
+
+    @Test
+    void devePropagarExcecaoAoListarFeedbacks() {
+        when(repository.findAll())
+                .thenThrow(new RuntimeException("Erro ao listar feedbacks"));
+
+        RuntimeException exception = assertThrows(
+                RuntimeException.class,
+                () -> service.listar()
+        );
+
+        assertEquals("Erro ao listar feedbacks", exception.getMessage());
+
+        verify(repository, times(1)).findAll();
+    }
 }
