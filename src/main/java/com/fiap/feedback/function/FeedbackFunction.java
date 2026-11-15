@@ -1,5 +1,6 @@
 package com.fiap.feedback.function;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fiap.feedback.FeedbackApplication;
 import com.fiap.feedback.dto.FeedbackRequest;
@@ -50,7 +51,21 @@ public class FeedbackFunction {
         try {
             String body = request.getBody().orElseThrow(() -> new IllegalArgumentException("Body obrigatório"));
             ObjectMapper mapper = SPRING_CONTEXT.getBean(ObjectMapper.class);
-            FeedbackRequest payload = mapper.readValue(body, FeedbackRequest.class);
+            FeedbackRequest payload;
+            try {
+                payload = mapper.readValue(body, FeedbackRequest.class);
+            } catch (JsonProcessingException ex) {
+                Throwable cause = ex;
+                while (cause != null && !(cause instanceof IllegalArgumentException)) {
+                    cause = cause.getCause();
+                }
+                String message = cause != null && cause.getMessage() != null
+                        ? cause.getMessage()
+                        : "JSON inválido.";
+                return request.createResponseBuilder(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", message))
+                        .build();
+            }
 
             Validator validator = SPRING_CONTEXT.getBean(Validator.class);
             Set<ConstraintViolation<FeedbackRequest>> violations = validator.validate(payload);

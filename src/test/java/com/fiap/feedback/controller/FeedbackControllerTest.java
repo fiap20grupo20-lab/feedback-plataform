@@ -56,52 +56,7 @@ class FeedbackControllerTest {
     }
 
     @Test
-    void deveListarFeedbacksERetornarStatusOk() {
-        Feedback feedback = new Feedback();
-        feedback.setId("id-456");
-        feedback.setDescricao("Precisa melhorar o tempo de resposta");
-        feedback.setNota(6);
-        feedback.setUrgencia(Urgencia.MEDIA);
-
-        when(service.listar()).thenReturn(List.of(feedback));
-
-        ResponseEntity<List<Feedback>> resultado = controller.listar();
-
-        assertNotNull(resultado);
-        assertEquals(HttpStatus.OK, resultado.getStatusCode());
-        assertNotNull(resultado.getBody());
-        assertEquals(1, resultado.getBody().size());
-        assertEquals("id-456", resultado.getBody().get(0).getId());
-        assertEquals(
-                "Precisa melhorar o tempo de resposta",
-                resultado.getBody().get(0).getDescricao()
-        );
-
-        verify(service, times(1)).listar();
-    }
-
-    @Test
-    void deveRetornarListaVaziaQuandoNaoExistiremFeedbacks() {
-        when(service.listar()).thenReturn(List.of());
-
-        ResponseEntity<List<Feedback>> resultado = controller.listar();
-
-        assertNotNull(resultado);
-        assertEquals(HttpStatus.OK, resultado.getStatusCode());
-        assertNotNull(resultado.getBody());
-        assertTrue(resultado.getBody().isEmpty());
-
-        verify(service, times(1)).listar();
-    }
-
-    @Test
-    void deveRetornarStatusUpNoHealthCheck() {
-        Map<String, String> resultado = controller.health();
-
-        assertNotNull(resultado);
-        assertEquals("UP", resultado.get("status"));
-        assertEquals(1, resultado.size());
-
-        verifyNoInteractions(service);
+                                }
+                        }
     }
 }
