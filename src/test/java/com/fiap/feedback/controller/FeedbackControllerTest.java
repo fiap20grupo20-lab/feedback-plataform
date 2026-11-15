@@ -4,6 +4,7 @@ import com.fiap.feedback.dto.FeedbackRequest;
 import com.fiap.feedback.enums.Urgencia;
 import com.fiap.feedback.model.Feedback;
 import com.fiap.feedback.service.FeedbackService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -11,10 +12,15 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import java.util.List;
-import java.util.Map;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(MockitoExtension.class)
 class FeedbackControllerTest {
@@ -24,6 +30,15 @@ class FeedbackControllerTest {
 
     @InjectMocks
     private FeedbackController controller;
+
+    private MockMvc mockMvc;
+
+    @BeforeEach
+    void setUp() {
+        mockMvc = MockMvcBuilders.standaloneSetup(controller)
+                .setControllerAdvice(new FeedbackExceptionHandler())
+                .build();
+    }
 
     @Test
     void deveCriarFeedbackERetornarStatusCreated() {
@@ -56,7 +71,21 @@ class FeedbackControllerTest {
     }
 
     @Test
+    void deveInformarTiposPermitidosQuandoUrgenciaForInvalidaNoCadastro() throws Exception {
+        mockMvc.perform(post("/avaliacao")
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "descricao": "Atendimento",
+                                  "nota": 8,
+                                  "urgencia": "CRITICA"
                                 }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().json("""
+                        {
+                          "error": "Urgência inválida. Tipos permitidos: BAIXA, MEDIA, ALTA."
                         }
+                        """));
     }
 }
